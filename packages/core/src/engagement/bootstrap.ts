@@ -7,7 +7,7 @@
 // readRunState / readEngagementCompletion.
 
 import { ENGAGEMENT_ENV_DIR, ENGAGEMENT_ENV_ID } from "./env"
-import { compileTestPolicy, type TestPolicy } from "./policy"
+import { DEFAULT_TEST_POLICY, compileTestPolicy, type TestPolicy } from "./policy"
 import { ensurePentestWorkspace, pentestWorkspacePath, writeRunState, type RunState } from "../config/tools/pentest-workspace"
 import { join } from "path"
 
@@ -86,5 +86,36 @@ export async function bootstrapEngagement(input: BootstrapEngagementInput): Prom
             [ENGAGEMENT_ENV_ID]: engagementId,
             [ENGAGEMENT_ENV_DIR]: workspaceDir,
         },
+    }
+}
+
+export interface EngagementPolicyReadResult {
+    policy: TestPolicy
+    authorizedTargets: string[]
+    seeds: string[]
+}
+
+/**
+ * Read engagement-policy.json from a workspace with tolerant defaults.
+ *
+ * Never throws: a missing / malformed file yields DEFAULT_TEST_POLICY with empty
+ * targets/seeds. Used by the solver-guidance reader to hydrate the dynamic guidance.
+ */
+export async function readEngagementPolicy(dir: string): Promise<EngagementPolicyReadResult> {
+    const fallback: EngagementPolicyReadResult = { policy: DEFAULT_TEST_POLICY, authorizedTargets: [], seeds: [] }
+
+    const file = Bun.file(join(dir, ENGAGEMENT_POLICY_FILE))
+    if (!(await file.exists())) return fallback
+
+    try {
+        const raw = (await file.json()) as Partial<EngagementPolicyRecord>
+        const policy = raw.policy && typeof raw.policy === "object" ? (raw.policy as TestPolicy) : DEFAULT_TEST_POLICY
+        return {
+            policy,
+            authorizedTargets: Array.isArray(raw.authorizedTargets) ? raw.authorizedTargets.filter((target): target is string => typeof target === "string") : [],
+            seeds: Array.isArray(raw.seeds) ? raw.seeds.filter((seed): seed is string => typeof seed === "string") : [],
+        }
+    } catch {
+        return fallback
     }
 }

@@ -37,6 +37,13 @@ export interface TestPolicy {
     rateLimit?: { maxToolCalls?: number; maxDurationMs?: number }
 }
 
+/** Safe fallback policy for tolerant readers (missing/corrupt engagement-policy.json). */
+export const DEFAULT_TEST_POLICY: TestPolicy = {
+    vulnClasses: [],
+    depth: "standard",
+    redLine: "poc-safe",
+}
+
 /**
  * Exploit-mode / active-exploitation tooling forbidden under the read-only red line.
  * These go BEYOND the default scanner block list (which is about noisy recon);

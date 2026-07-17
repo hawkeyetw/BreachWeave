@@ -26,9 +26,9 @@ import { securityKimiSearchTool } from "./security-kimi-search"
 /** 所有自定义工具定义 */
 export const customTools: ToolDefinition[] = [
     securityKimiSearchTool,
-    // submitSubAgentOutputTool,
-    // ingestSubAgentOutputTool,
-    // documentFindingTool,
+    submitSubAgentOutputTool,
+    ingestSubAgentOutputTool,
+    documentFindingTool,
     ...challengeTools,
 ]
 

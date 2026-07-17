@@ -2,6 +2,7 @@ import type { ExtensionFactory } from "@mariozechner/pi-coding-agent"
 import type { PromptSessionExtensionLike } from "../../../config/index"
 import { engagementDir, isEngagementMode } from "../../../engagement/env"
 import { createEngagementCompletionOracle, type CompletionOracle } from "../../../engagement/oracle"
+import { readEngagementSolverGuidance } from "../../../engagement/solver-guidance"
 import { attachObserverLoop } from "../challenge-observer/observer-loop"
 import { challengeObserverAgentTools } from "../challenge-observer/tools"
 import { attachEngagementContinuation } from "./engagement-continuation"
@@ -56,6 +57,16 @@ export function engagementObserverExtension(options?: EngagementObserverExtensio
         const dir = engagementDir()
         const oracle: CompletionOracle = dir ? createEngagementCompletionOracle(dir) : { isComplete: async () => false }
         attachEngagementContinuation(pi, oracle)
+
+        // Dynamic phase-aware guidance: complements the static engagement contract
+        // (appendSystemPrompt). No-op when the engagement dir is missing.
+        if (dir) {
+            pi.on("before_agent_start", async (event) => {
+                const guidance = await readEngagementSolverGuidance(dir)
+                if (!guidance.trim()) return
+                return { systemPrompt: `${event.systemPrompt}\n\n${guidance}` }
+            })
+        }
 
         if (observerEnabled) {
             attachObserverLoop(pi, { observerModel, host: createEngagementObserverHost() })
