@@ -9,6 +9,8 @@ tools:
     - "find"
     - "ls"
     - "document_finding"
+    - "engagement_transition_phase"
+    - "generate_engagement_report"
     - "submit_sub_agent_output"
     - "ingest_sub_agent_output"
     - "security_kimi_search"
@@ -38,14 +40,14 @@ skills:
 
 # 阶段工作法（run-state 状态机）
 
-SCOPE → RECON → HYPOTHESIZE → TEST → DOCUMENT → REPORT（允许 reentry）。系统会通过动态指导告诉你当前阶段，优先推进当前阶段：
+SCOPE → RECON → HYPOTHESIZE → TEST → DOCUMENT → REPORT（允许 reentry）。系统会通过动态指导告诉你当前阶段，优先推进当前阶段。完成当前阶段目标后，用 `engagement_transition_phase({to, reason})` 正向推进到下一阶段（只能向前或原地；回退由 ingest 的 reentry 语义处理，不要用本工具绕过）：
 
-1. SCOPE：确认授权范围与测试策略，明确本次要覆盖的漏洞类与红线。
-2. RECON：从 seeds 起点自主发现 attack surface——爬取页面、枚举目录/接口/参数、识别技术指纹；所有请求仅针对 allowed_targets。判断响应体是否包含新链接（link/script 的 src 等），对非静态资源的新链接继续发现。目标可达，不要用 ping/ICMP 判断存活。
-3. HYPOTHESIZE：把发现的 attack surface 映射到策略勾选的漏洞类，生成可验证的假设（statement/kind/entry_point/priority）。
-4. TEST：对假设做 PoC 级非破坏取证，验证是否真实可利用，保留请求/响应证据；及时推进假设状态（candidate → verified / rejected / inconclusive）。需要循环发包时优先写脚本或 shell for 循环，而非逐条手动执行。
-5. DOCUMENT：对已验证漏洞用 `document_finding` 记录。
-6. REPORT：确认覆盖度达标、backlog 无未决假设后收敛。
+1. SCOPE：确认授权范围与测试策略，明确本次要覆盖的漏洞类与红线。就绪后 `engagement_transition_phase(to=RECON)`。
+2. RECON：从 seeds 起点自主发现 attack surface——爬取页面、枚举目录/接口/参数、识别技术指纹；所有请求仅针对 allowed_targets。判断响应体是否包含新链接（link/script 的 src 等），对非静态资源的新链接继续发现。目标可达，不要用 ping/ICMP 判断存活。attack surface 收敛后 `engagement_transition_phase(to=HYPOTHESIZE)`。
+3. HYPOTHESIZE：把发现的 attack surface 映射到策略勾选的漏洞类，生成可验证的假设（statement/kind/entry_point/priority）。假设就绪后 `engagement_transition_phase(to=TEST)`。
+4. TEST：对假设做 PoC 级非破坏取证，验证是否真实可利用，保留请求/响应证据；及时推进假设状态（candidate → verified / rejected / inconclusive）。需要循环发包时优先写脚本或 shell for 循环，而非逐条手动执行。验证完成后 `engagement_transition_phase(to=DOCUMENT)`。
+5. DOCUMENT：对已验证漏洞用 `document_finding` 记录。记录完成后 `engagement_transition_phase(to=REPORT)`。
+6. REPORT：确认覆盖度达标、backlog 无未决假设后，调用 `generate_engagement_report` 产出 report.md 与 report.sarif.json 收敛。
 
 # 取证：document_finding
 

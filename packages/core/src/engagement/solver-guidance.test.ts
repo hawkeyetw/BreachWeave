@@ -98,6 +98,17 @@ describe("buildEngagementSolverGuidance", () => {
         expect(guidance).toContain("document_finding")
     })
 
+    test("instructs advancing phases and generating the report", () => {
+        const guidance = buildEngagementSolverGuidance({
+            policy: makePolicy(),
+            allowedTargets: ["api.corp.com"],
+            phase: "REPORT",
+            seeds: [],
+        })
+        expect(guidance).toContain("engagement_transition_phase")
+        expect(guidance).toContain("generate_engagement_report")
+    })
+
     test("renders seeds when provided", () => {
         const guidance = buildEngagementSolverGuidance({
             policy: makePolicy(),

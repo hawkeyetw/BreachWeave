@@ -18,6 +18,8 @@ import {
 import { documentFindingTool } from "./document-finding"
 import { ingestSubAgentOutputTool } from "./ingest-sub-agent-output"
 import { submitSubAgentOutputTool } from "./submit-sub-agent-output"
+import { engagementTransitionPhaseTool } from "./engagement-phase"
+import { generateEngagementReportTool } from "./engagement-report-tool"
 import { challengeTools } from "./challenge-tools"
 import { securityKimiSearchTool } from "./security-kimi-search"
 
@@ -29,6 +31,8 @@ export const customTools: ToolDefinition[] = [
     submitSubAgentOutputTool,
     ingestSubAgentOutputTool,
     documentFindingTool,
+    engagementTransitionPhaseTool,
+    generateEngagementReportTool,
     ...challengeTools,
 ]
 

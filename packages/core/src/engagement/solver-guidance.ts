@@ -27,7 +27,7 @@ const PHASE_GUIDE: Record<Phase, string> = {
     HYPOTHESIZE: "把发现的 attack surface 映射到策略勾选的漏洞类，生成可验证的 hypothesis backlog（statement/kind/entry_point/priority）。",
     TEST: "对 backlog 里的假设做 PoC 级非破坏取证：验证漏洞是否可利用，保留请求/响应证据；及时推进假设状态。",
     DOCUMENT: "对已验证的漏洞用 document_finding 记录，附 severity/confidence/remediation 与请求-响应证据、复现步骤。",
-    REPORT: "收敛整理：确认覆盖度达标、backlog 无未决假设，输出可复核的最终结论。",
+    REPORT: "收敛整理：确认覆盖度达标、backlog 无未决假设，调用 generate_engagement_report 产出 report.md + report.sarif.json。",
 }
 
 /** Human-readable label per OWASP vuln class for the focus section. */
@@ -57,6 +57,10 @@ function renderPhaseWorkflow(current: Phase): string[] {
         const emphasis = phase === current ? "  ← 当前阶段，优先推进" : ""
         lines.push(`${marker} ${phase}: ${PHASE_GUIDE[phase]}${emphasis}`)
     }
+    lines.push(
+        "- 完成当前阶段目标后，用 `engagement_transition_phase({to, reason})` 正向推进到下一阶段（只能向前或原地；回退由 ingest 的 reentry 语义处理，不要用本工具绕过）。",
+        "- 到 REPORT 阶段用 `generate_engagement_report` 出报告（report.md + report.sarif.json）。",
+    )
     return lines
 }
 
