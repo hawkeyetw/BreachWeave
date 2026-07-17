@@ -119,3 +119,13 @@ export function commandIsDestructive(command: string): { destructive: boolean; p
     }
     return { destructive: false }
 }
+
+// --- Sub-agent spawn tool name reconciliation ---
+// The real spawn tool is registered as "subagent" (createSubagentTool). Older code /
+// prompts referenced "spawn_sub_agent". Recognize BOTH so the main orchestrator's
+// direct-action budget resets on delegation regardless of the name in play (widen-only).
+const SPAWN_TOOL_NAMES = new Set(["subagent", "spawn_sub_agent"])
+
+export function isSpawnToolName(name: string): boolean {
+    return SPAWN_TOOL_NAMES.has(name)
+}

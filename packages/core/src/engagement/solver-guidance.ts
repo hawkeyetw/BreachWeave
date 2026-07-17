@@ -104,8 +104,24 @@ function renderEvidence(): string[] {
         "## 取证与推进",
         "- 发现漏洞后立即用 `document_finding` 记录，带 severity、confidence、remediation，并附可复核的请求/响应证据与复现步骤。",
         "- 每条假设都通过实测推进状态（candidate → verified / rejected / inconclusive）；不要凭空判定。",
-        "- 复杂/独立的子任务用 `spawn_sub_agent` 分派，回收用 `ingest_sub_agent_output`；子 agent 用 `submit_sub_agent_output` 汇报。",
     ]
+}
+
+function renderDelegation(phase: Phase): string[] {
+    const lines = [
+        "## 委派与编排 (sub-agent fan-out)",
+        "- 你是编排者：深度/可并行/需隔离上下文的子任务用 `subagent` 工具分派给专职子 agent，自己少做直接侦测/测试动作（否则触发 scope-guard 的 main 直接动作预算）。",
+        "- 可用子 agent：`ENGAGEMENT_RECON`（attack-surface 发现）、`ENGAGEMENT_TARGETED_PENTEST`（验证单条 hypothesis，PoC-safe 取证）、`ENGAGEMENT_PAYLOAD_RESEARCH`（payload/绕过研究）。",
+        "- 阶段化委派：RECON 阶段派 `ENGAGEMENT_RECON`；TEST 阶段对高优先 hypothesis 逐条派 `ENGAGEMENT_TARGETED_PENTEST`（一次一条、goal 明确）；需要 payload 弹药时派 `ENGAGEMENT_PAYLOAD_RESEARCH`。",
+        "- `subagent` 支持 single / parallel / chain 三种模式。",
+        "- 闭环：`subagent` 分派 → 子 agent 用 `submit_sub_agent_output` 汇报 → 你用 `ingest_sub_agent_output` 回收，推进 hypothesis backlog 与 phase；reentry（回退深入）由 ingest 的 reentry 语义处理，不要用 `engagement_transition_phase` 绕过。",
+    ]
+    if (phase === "RECON") {
+        lines.push('- 当前处于 RECON：优先用 `subagent(agent="ENGAGEMENT_RECON")` 集中做授权范围内的发现。')
+    } else if (phase === "TEST") {
+        lines.push("- 当前处于 TEST：对 backlog 里高优先 hypothesis 逐条派 `ENGAGEMENT_TARGETED_PENTEST` 验证，返回后 `ingest_sub_agent_output` 推进。")
+    }
+    return lines
 }
 
 function renderSeeds(seeds: string[]): string[] {
@@ -117,7 +133,8 @@ function renderSeeds(seeds: string[]): string[] {
  * Build the dynamic engagement solver guidance block (PURE).
  *
  * Sections: persona → phase workflow (current phase emphasized) → focus (vuln classes
- * + exclusions) → authorization scope + red line → evidence/backlog → seeds.
+ * + exclusions) → authorization scope + red line → evidence/backlog → sub-agent
+ * delegation (spawn→submit→ingest, phase-appropriate) → seeds.
  * Enterprise/neutral: no CTF / flag semantics.
  */
 export function buildEngagementSolverGuidance(input: EngagementSolverGuidanceInput): string {
@@ -133,6 +150,7 @@ export function buildEngagementSolverGuidance(input: EngagementSolverGuidanceInp
         renderFocus(policy),
         renderScopeAndRedLine(allowedTargets, policy),
         renderEvidence(),
+        renderDelegation(phase),
     ]
 
     const seedSection = renderSeeds(seeds)

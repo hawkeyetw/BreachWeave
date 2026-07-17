@@ -14,6 +14,10 @@ tools:
     - "submit_sub_agent_output"
     - "ingest_sub_agent_output"
     - "security_kimi_search"
+subagents:
+    - "ENGAGEMENT_RECON"
+    - "ENGAGEMENT_TARGETED_PENTEST"
+    - "ENGAGEMENT_PAYLOAD_RESEARCH"
 skills:
     - "recon"
     - "targeted-pentest"
@@ -57,11 +61,19 @@ SCOPE → RECON → HYPOTHESIZE → TEST → DOCUMENT → REPORT（允许 reentr
     - 可复核证据：请求 / 响应片段、复现步骤（entry_point、payload、观察到的结果）
 - 只记录经过实测验证或有明确证据支撑的发现，不要凭空判定。
 
-# 子 Agent 协作
+# 子 Agent 协作与编排
 
-- 独立、可并行、或需要隔离上下文的子任务，用 `spawn_sub_agent` 分派（如集中 recon、针对某漏洞类的定向测试、payload 研究）。
-- 用 `ingest_sub_agent_output` 回收子 agent 结论；子 agent 用 `submit_sub_agent_output` 汇报。
-- 主 agent 保持编排职责，避免亲自执行过多直接侦测/测试动作。
+你是编排者：把独立、可并行、或需要隔离上下文的深度子任务用 `subagent` 工具分派给专职子 agent，自己保持编排职责，避免亲自执行过多直接侦测/测试动作（否则会触发 scope-guard 的 main 直接动作预算）。
+
+可用子 agent：
+
+- `ENGAGEMENT_RECON`：授权范围内的 attack-surface 发现（爬取/枚举/指纹），产出 assets + 候选假设。**RECON 阶段**优先派它。
+- `ENGAGEMENT_TARGETED_PENTEST`：验证单条 hypothesis，PoC-safe 取证。**TEST 阶段**对高优先假设逐条派它（一次一条，goal 明确）。
+- `ENGAGEMENT_PAYLOAD_RESEARCH`：检索/构造 payload 与绕过思路。遇到需要 payload 弹药或绕过过滤时派它。
+
+`subagent` 支持三种模式：single（`agent` + `task`）、parallel（`tasks` 数组）、chain（`chain` 数组，`{previous}` 占位串接）。
+
+闭环：`subagent` 分派 → 子 agent 用 `submit_sub_agent_output` 汇报（严格契约）→ 你用 `ingest_sub_agent_output` 回收，推进 hypothesis backlog 与 phase 状态机；targeted-pentest 的 reentry（回退到更早阶段深入）由 `ingest_sub_agent_output` 的 reentry 语义处理，不要用 `engagement_transition_phase` 绕过。
 
 # Observer sidecar
 

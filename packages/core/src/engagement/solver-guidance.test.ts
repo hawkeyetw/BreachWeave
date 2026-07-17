@@ -130,6 +130,42 @@ describe("buildEngagementSolverGuidance", () => {
         expect(guidance.toLowerCase()).not.toContain("ctf")
         expect(guidance).not.toContain("赛题")
     })
+
+    test("includes sub-agent delegation guidance referencing the real subagent tool + spawn→submit→ingest loop", () => {
+        const guidance = buildEngagementSolverGuidance({
+            policy: makePolicy(),
+            allowedTargets: ["api.corp.com"],
+            phase: "RECON",
+            seeds: [],
+        })
+        expect(guidance).toContain("subagent")
+        expect(guidance).toContain("ENGAGEMENT_RECON")
+        expect(guidance).toContain("ENGAGEMENT_TARGETED_PENTEST")
+        expect(guidance).toContain("ENGAGEMENT_PAYLOAD_RESEARCH")
+        expect(guidance).toContain("submit_sub_agent_output")
+        expect(guidance).toContain("ingest_sub_agent_output")
+    })
+
+    test("emphasizes RECON delegation in the RECON phase", () => {
+        const guidance = buildEngagementSolverGuidance({
+            policy: makePolicy(),
+            allowedTargets: ["api.corp.com"],
+            phase: "RECON",
+            seeds: [],
+        })
+        expect(guidance).toContain('subagent(agent="ENGAGEMENT_RECON")')
+    })
+
+    test("emphasizes targeted-pentest delegation in the TEST phase", () => {
+        const guidance = buildEngagementSolverGuidance({
+            policy: makePolicy(),
+            allowedTargets: ["api.corp.com"],
+            phase: "TEST",
+            seeds: [],
+        })
+        expect(guidance).toContain("当前处于 TEST")
+        expect(guidance).toContain("ENGAGEMENT_TARGETED_PENTEST")
+    })
 })
 
 describe("readEngagementSolverGuidance", () => {

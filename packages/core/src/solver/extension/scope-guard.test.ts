@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { commandIsDestructive, extractCommandTargets, isTargetInScope } from "./scope-guard-policy"
+import { commandIsDestructive, extractCommandTargets, isSpawnToolName, isTargetInScope } from "./scope-guard-policy"
 
 describe("extractCommandTargets", () => {
     test("pulls host from URL, strips port and userinfo", () => {
@@ -83,4 +83,21 @@ describe("commandIsDestructive — PoC-safe red line", () => {
     ])("allows non-destructive PoC command %s", (command) => {
         expect(commandIsDestructive(command).destructive).toBe(false)
     })
+})
+
+describe("isSpawnToolName — spawn tool name reconciliation", () => {
+    test("recognizes the real spawn tool name", () => {
+        expect(isSpawnToolName("subagent")).toBe(true)
+    })
+
+    test("recognizes the legacy spawn tool name", () => {
+        expect(isSpawnToolName("spawn_sub_agent")).toBe(true)
+    })
+
+    test.each([["bash"], ["ingest_sub_agent_output"], ["submit_sub_agent_output"], ["document_finding"], [""]])(
+        "does not match non-spawn tool %s",
+        (name) => {
+            expect(isSpawnToolName(name)).toBe(false)
+        },
+    )
 })

@@ -3,7 +3,7 @@ import { isAbsolute, join, resolve } from "path"
 import { isToolCallEventType } from "@mariozechner/pi-coding-agent"
 import type { ExtensionFactory } from "@mariozechner/pi-coding-agent"
 import { pathStartsWithPrefix, readRunPolicy } from "../../config/tools/pentest-workspace"
-import { commandIsDestructive, isTargetInScope } from "./scope-guard-policy"
+import { commandIsDestructive, isSpawnToolName, isTargetInScope } from "./scope-guard-policy"
 
 export type ScopeGuardMode = "audit" | "enforce"
 
@@ -217,10 +217,10 @@ export function scopeGuardExtension(options: ScopeGuardOptions): ExtensionFactor
                     }
                 }
 
-                if (event.toolName === "spawn_sub_agent") {
+                if (isSpawnToolName(event.toolName)) {
                     if (mainDirectActions > 0) {
                         await writeLog(
-                            `[${new Date().toISOString()}] MAIN_DIRECT_ACTION_RESET role=main count_before_reset=${mainDirectActions} reason=spawn_sub_agent\n`,
+                            `[${new Date().toISOString()}] MAIN_DIRECT_ACTION_RESET role=main count_before_reset=${mainDirectActions} reason=${event.toolName}\n`,
                         )
                     }
                     mainDirectActions = 0
